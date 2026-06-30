@@ -18,5 +18,7 @@ Nombre Cliente,Direccion,Region,Comuna,Telefono,Email,Detalle Compra,Monto,Canti
 ```
 
 ## Notas
+- La primera ejecucion crea una Google Sheet llamada `Levantamiento Informacion - Base Demo`.
+- El ID de la hoja queda guardado en `PropertiesService`.
 - `Precio Total` se calcula automaticamente como `Monto * Cantidad`.
 - La importacion desde Excel se procesa en el navegador usando SheetJS por CDN.
