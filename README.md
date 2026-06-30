@@ -2,6 +2,9 @@
 
 Aplicacion web demo para levantar informacion comercial generica con formulario validado, tabla editable, carga masiva desde Google Sheets/CSV/XLSX y dashboard interactivo.
 
+## Acceso a la APP
+Pruebe la App en el siguiente enlace: [App Levantamiento de Información con App Script](https://script.google.com/macros/s/AKfycbweYbyCUQ-BuVedmXUXbTlFnJtRDPiXj6kEpTMwSRDJhnCNFCkYc21YiTIFAXJTvTYG8g/exec)
+
 ## Archivos
 
 - `appsscript.json`: manifest del proyecto.
