@@ -1,0 +1,1173 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <base target="_top">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Levantamiento de Informacion</title>
+    <script src="https://www.gstatic.com/charts/loader.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <style>
+      :root {
+        --bg: #f6f7f9;
+        --panel: #ffffff;
+        --ink: #18212f;
+        --muted: #687385;
+        --line: #d9dee7;
+        --accent: #0f766e;
+        --accent-dark: #115e59;
+        --danger: #b42318;
+        --warning: #a15c07;
+        --ok: #087443;
+        --shadow: 0 14px 40px rgba(24, 33, 47, 0.08);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        line-height: 1.4;
+      }
+
+      button,
+      input,
+      select {
+        font: inherit;
+      }
+
+      .app {
+        min-height: 100vh;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 18px 28px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(246, 247, 249, 0.9);
+        backdrop-filter: blur(12px);
+      }
+
+      .brand {
+        display: grid;
+        gap: 2px;
+      }
+
+      .brand strong {
+        font-size: 18px;
+      }
+
+      .brand span {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .tabs {
+        display: inline-flex;
+        padding: 4px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: var(--panel);
+      }
+
+      .tab {
+        border: 0;
+        border-radius: 999px;
+        padding: 9px 14px;
+        color: var(--muted);
+        background: transparent;
+        cursor: pointer;
+      }
+
+      .tab.active {
+        color: #fff;
+        background: var(--ink);
+      }
+
+      main {
+        width: min(1440px, 100%);
+        margin: 0 auto;
+        padding: 28px;
+      }
+
+      .view {
+        display: none;
+      }
+
+      .view.active {
+        display: block;
+      }
+
+      .workspace {
+        display: grid;
+        grid-template-columns: minmax(320px, 430px) minmax(0, 1fr);
+        gap: 22px;
+        align-items: start;
+      }
+
+      .panel {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: start;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px 20px 12px;
+      }
+
+      .panel-header h1,
+      .panel-header h2 {
+        margin: 0;
+        font-size: 20px;
+      }
+
+      .panel-header p {
+        margin: 5px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .form-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        padding: 8px 20px 20px;
+      }
+
+      .field {
+        display: grid;
+        gap: 6px;
+      }
+
+      .field.full {
+        grid-column: 1 / -1;
+      }
+
+      label {
+        color: #334155;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        text-transform: uppercase;
+      }
+
+      input,
+      select {
+        min-width: 0;
+        width: 100%;
+        height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        padding: 0 11px;
+        background: #fff;
+        color: var(--ink);
+        outline: none;
+        transition: border-color 160ms ease, box-shadow 160ms ease;
+      }
+
+      input:focus,
+      select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.14);
+      }
+
+      input[readonly] {
+        background: #f1f5f9;
+        color: #475569;
+      }
+
+      .form-actions,
+      .import-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 0 20px 20px;
+      }
+
+      .btn {
+        display: inline-flex;
+        min-height: 40px;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        padding: 0 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn.primary {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .btn.primary:hover {
+        background: var(--accent-dark);
+      }
+
+      .btn.secondary {
+        border-color: var(--line);
+        background: #fff;
+        color: var(--ink);
+      }
+
+      .btn.danger {
+        border-color: rgba(180, 35, 24, 0.2);
+        background: #fff;
+        color: var(--danger);
+      }
+
+      .btn:disabled {
+        cursor: wait;
+        opacity: 0.65;
+        transform: none;
+      }
+
+      .stack {
+        display: grid;
+        gap: 22px;
+      }
+
+      .toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 0 20px 18px;
+      }
+
+      .search {
+        max-width: 360px;
+      }
+
+      .table-wrap {
+        overflow: auto;
+        border-top: 1px solid var(--line);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 980px;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 11px 12px;
+        text-align: left;
+        vertical-align: middle;
+        font-size: 13px;
+      }
+
+      th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #eef2f7;
+        color: #334155;
+        font-size: 12px;
+        text-transform: uppercase;
+        white-space: nowrap;
+        cursor: pointer;
+      }
+
+      td {
+        background: #fff;
+      }
+
+      tr:hover td {
+        background: #f8fafc;
+      }
+
+      .row-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .icon-btn {
+        width: 34px;
+        height: 34px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: #fff;
+        cursor: pointer;
+      }
+
+      .icon-btn:hover {
+        border-color: var(--accent);
+      }
+
+      .icon-btn.delete:hover {
+        border-color: var(--danger);
+        color: var(--danger);
+      }
+
+      .import-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 14px;
+        padding: 8px 20px 14px;
+      }
+
+      .status {
+        margin: 0 20px 20px;
+        border-radius: 6px;
+        padding: 12px;
+        color: var(--muted);
+        background: #f8fafc;
+        font-size: 13px;
+      }
+
+      .status.error {
+        color: var(--danger);
+        background: #fff1f0;
+      }
+
+      .status.ok {
+        color: var(--ok);
+        background: #ecfdf3;
+      }
+
+      .status.warning {
+        color: var(--warning);
+        background: #fffaeb;
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 14px;
+        margin-bottom: 22px;
+      }
+
+      .metric {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 18px;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 8px;
+        font-size: 26px;
+      }
+
+      .charts {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
+      }
+
+      .chart {
+        min-height: 360px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 14px;
+        box-shadow: var(--shadow);
+      }
+
+      .empty {
+        padding: 36px 20px;
+        color: var(--muted);
+        text-align: center;
+      }
+
+      .loading {
+        opacity: 0.72;
+        pointer-events: none;
+      }
+
+      @media (max-width: 1100px) {
+        .workspace,
+        .charts {
+          grid-template-columns: 1fr;
+        }
+
+        .metrics {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 720px) {
+        .topbar {
+          position: static;
+          align-items: stretch;
+          flex-direction: column;
+          padding: 16px;
+        }
+
+        main {
+          padding: 16px;
+        }
+
+        .form-grid,
+        .import-grid,
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+
+        .tabs {
+          width: 100%;
+        }
+
+        .tab {
+          flex: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app" id="app">
+      <header class="topbar">
+        <div class="brand">
+          <strong>Levantamiento Comercial</strong>
+          <span>Formulario, tabla editable, importacion y dashboard</span>
+        </div>
+        <nav class="tabs" aria-label="Vistas">
+          <button class="tab active" type="button" data-view="records">Registros</button>
+          <button class="tab" type="button" data-view="dashboard">Dashboard</button>
+        </nav>
+      </header>
+
+      <main>
+        <section class="view active" id="records-view">
+          <div class="workspace">
+            <div class="stack">
+              <section class="panel" aria-labelledby="form-title">
+                <div class="panel-header">
+                  <div>
+                    <h1 id="form-title">Nuevo registro</h1>
+                    <p>Precio total se calcula con monto y cantidad.</p>
+                  </div>
+                </div>
+
+                <form id="record-form">
+                  <div class="form-grid">
+                    <div class="field full">
+                      <label for="nombreCliente">Nombre Cliente</label>
+                      <input id="nombreCliente" name="nombreCliente" required autocomplete="name">
+                    </div>
+                    <div class="field full">
+                      <label for="direccion">Direccion</label>
+                      <input id="direccion" name="direccion" autocomplete="street-address">
+                    </div>
+                    <div class="field">
+                      <label for="region">Region</label>
+                      <select id="region" name="region" required></select>
+                    </div>
+                    <div class="field">
+                      <label for="comuna">Comuna</label>
+                      <select id="comuna" name="comuna" required></select>
+                    </div>
+                    <div class="field">
+                      <label for="telefono">Telefono</label>
+                      <input id="telefono" name="telefono" placeholder="+56 9 1234 5678" autocomplete="tel">
+                    </div>
+                    <div class="field">
+                      <label for="email">Email</label>
+                      <input id="email" name="email" type="email" required autocomplete="email">
+                    </div>
+                    <div class="field full">
+                      <label for="detalleCompra">Detalle Compra</label>
+                      <input id="detalleCompra" name="detalleCompra" required placeholder="Ej: Servicio mensual, producto demo">
+                    </div>
+                    <div class="field">
+                      <label for="monto">Monto</label>
+                      <input id="monto" name="monto" inputmode="decimal" required>
+                    </div>
+                    <div class="field">
+                      <label for="cantidad">Cantidad</label>
+                      <input id="cantidad" name="cantidad" inputmode="decimal" required>
+                    </div>
+                    <div class="field full">
+                      <label for="precioTotal">Precio Total</label>
+                      <input id="precioTotal" name="precioTotal" readonly>
+                    </div>
+                  </div>
+
+                  <div class="form-actions">
+                    <button class="btn primary" id="submit-button" type="submit">Añadir</button>
+                    <button class="btn secondary" id="cancel-edit" type="button" hidden>Cancelar edicion</button>
+                  </div>
+                </form>
+                <div class="status" id="form-status">Completa los campos obligatorios para añadir un registro.</div>
+              </section>
+
+              <section class="panel" aria-labelledby="import-title">
+                <div class="panel-header">
+                  <div>
+                    <h2 id="import-title">Carga masiva</h2>
+                    <p>Importa desde Google Sheet, CSV o Excel usando los mismos encabezados.</p>
+                  </div>
+                </div>
+
+                <div class="import-grid">
+                  <div class="field">
+                    <label for="sheet-source">Google Sheet URL o ID</label>
+                    <input id="sheet-source" placeholder="https://docs.google.com/spreadsheets/d/...">
+                  </div>
+                  <div class="field">
+                    <label for="file-source">Archivo CSV o XLSX</label>
+                    <input id="file-source" type="file" accept=".csv,.xlsx,.xls">
+                  </div>
+                </div>
+                <div class="import-actions">
+                  <button class="btn primary" id="import-sheet" type="button">Importar Sheet</button>
+                  <button class="btn primary" id="import-file" type="button">Importar archivo</button>
+                  <button class="btn secondary" id="download-template" type="button">Descargar plantilla</button>
+                </div>
+                <div class="status" id="import-status">La plantilla incluye las columnas esperadas para validar cada fila.</div>
+              </section>
+            </div>
+
+            <section class="panel" aria-labelledby="table-title">
+              <div class="panel-header">
+                <div>
+                  <h2 id="table-title">Datos añadidos</h2>
+                  <p id="record-count">0 registros</p>
+                </div>
+              </div>
+              <div class="toolbar">
+                <input class="search" id="search" placeholder="Buscar en la tabla">
+                <button class="btn secondary" id="refresh" type="button">Refrescar</button>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th data-sort="fechaRegistro">Fecha</th>
+                      <th data-sort="nombreCliente">Cliente</th>
+                      <th data-sort="region">Region</th>
+                      <th data-sort="comuna">Comuna</th>
+                      <th data-sort="email">Email</th>
+                      <th data-sort="detalleCompra">Detalle</th>
+                      <th data-sort="monto">Monto</th>
+                      <th data-sort="cantidad">Cantidad</th>
+                      <th data-sort="precioTotal">Total</th>
+                      <th>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody id="records-body">
+                    <tr>
+                      <td colspan="10" class="empty">Cargando datos...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view" id="dashboard-view">
+          <div class="metrics">
+            <div class="metric">
+              <span>Total vendido</span>
+              <strong id="metric-total">$0</strong>
+            </div>
+            <div class="metric">
+              <span>Registros</span>
+              <strong id="metric-count">0</strong>
+            </div>
+            <div class="metric">
+              <span>Ticket promedio</span>
+              <strong id="metric-average">$0</strong>
+            </div>
+            <div class="metric">
+              <span>Unidades</span>
+              <strong id="metric-units">0</strong>
+            </div>
+          </div>
+
+          <div class="charts">
+            <div class="chart" id="chart-region"></div>
+            <div class="chart" id="chart-comuna"></div>
+            <div class="chart" id="chart-detail"></div>
+            <div class="chart" id="chart-date"></div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      google.charts.load('current', { packages: ['corechart'] });
+
+      const state = {
+        records: [],
+        regions: [],
+        editingId: null,
+        sortKey: 'fechaRegistro',
+        sortDirection: 'desc',
+        chartsReady: false,
+        templateHeaders: []
+      };
+
+      const currency = new Intl.NumberFormat('es-CL', {
+        style: 'currency',
+        currency: 'CLP',
+        maximumFractionDigits: 0
+      });
+
+      const numberFormat = new Intl.NumberFormat('es-CL');
+
+      const elements = {
+        app: document.getElementById('app'),
+        form: document.getElementById('record-form'),
+        formTitle: document.getElementById('form-title'),
+        formStatus: document.getElementById('form-status'),
+        importStatus: document.getElementById('import-status'),
+        submitButton: document.getElementById('submit-button'),
+        cancelEdit: document.getElementById('cancel-edit'),
+        region: document.getElementById('region'),
+        comuna: document.getElementById('comuna'),
+        monto: document.getElementById('monto'),
+        cantidad: document.getElementById('cantidad'),
+        precioTotal: document.getElementById('precioTotal'),
+        body: document.getElementById('records-body'),
+        count: document.getElementById('record-count'),
+        search: document.getElementById('search'),
+        sheetSource: document.getElementById('sheet-source'),
+        fileSource: document.getElementById('file-source')
+      };
+
+      document.addEventListener('DOMContentLoaded', init);
+      google.charts.setOnLoadCallback(() => {
+        state.chartsReady = true;
+        renderDashboard();
+      });
+
+      function init() {
+        bindEvents();
+        setLoading(true);
+        google.script.run
+          .withSuccessHandler((data) => {
+            state.records = data.records || [];
+            state.regions = data.regions || [];
+            state.templateHeaders = data.templateHeaders || [];
+            populateRegions();
+            renderAll();
+            setLoading(false);
+          })
+          .withFailureHandler((error) => {
+            setLoading(false);
+            setStatus(elements.formStatus, error.message || String(error), 'error');
+          })
+          .getInitialData();
+      }
+
+      function bindEvents() {
+        document.querySelectorAll('.tab').forEach((button) => {
+          button.addEventListener('click', () => switchView(button.dataset.view));
+        });
+
+        elements.region.addEventListener('change', () => populateCommunes());
+        elements.monto.addEventListener('input', updateTotal);
+        elements.cantidad.addEventListener('input', updateTotal);
+        elements.form.addEventListener('submit', handleSubmit);
+        elements.cancelEdit.addEventListener('click', resetForm);
+        elements.search.addEventListener('input', renderTable);
+        document.getElementById('refresh').addEventListener('click', refreshRecords);
+        document.getElementById('import-sheet').addEventListener('click', importSheet);
+        document.getElementById('import-file').addEventListener('click', importFile);
+        document.getElementById('download-template').addEventListener('click', downloadTemplate);
+        document.querySelectorAll('th[data-sort]').forEach((header) => {
+          header.addEventListener('click', () => sortBy(header.dataset.sort));
+        });
+      }
+
+      function switchView(view) {
+        document.querySelectorAll('.tab').forEach((button) => {
+          button.classList.toggle('active', button.dataset.view === view);
+        });
+        document.querySelectorAll('.view').forEach((section) => section.classList.remove('active'));
+        document.getElementById(`${view}-view`).classList.add('active');
+        if (view === 'dashboard') {
+          renderDashboard();
+        }
+      }
+
+      function populateRegions() {
+        elements.region.innerHTML = '<option value="">Selecciona region</option>' + state.regions
+          .map((region) => `<option value="${escapeHtml(region.name)}">${escapeHtml(region.name)}</option>`)
+          .join('');
+        populateCommunes();
+      }
+
+      function populateCommunes(selected = '') {
+        const region = state.regions.find((item) => item.name === elements.region.value);
+        const communes = region ? region.communes : [];
+        elements.comuna.innerHTML = '<option value="">Selecciona comuna</option>' + communes
+          .map((commune) => `<option value="${escapeHtml(commune)}">${escapeHtml(commune)}</option>`)
+          .join('');
+        if (selected && communes.includes(selected)) {
+          elements.comuna.value = selected;
+        }
+      }
+
+      function handleSubmit(event) {
+        event.preventDefault();
+        const record = getFormData();
+        const errors = validateClient(record);
+        if (errors.length) {
+          setStatus(elements.formStatus, errors.join(' '), 'error');
+          return;
+        }
+
+        setLoading(true);
+        const runner = google.script.run
+          .withSuccessHandler(handleMutationResult(elements.formStatus, state.editingId ? 'Registro actualizado.' : 'Registro añadido.'))
+          .withFailureHandler(handleFailure(elements.formStatus));
+
+        if (state.editingId) {
+          runner.updateRecord(state.editingId, record);
+        } else {
+          runner.addRecord(record);
+        }
+      }
+
+      function getFormData() {
+        return {
+          nombreCliente: valueOf('nombreCliente'),
+          direccion: valueOf('direccion'),
+          region: valueOf('region'),
+          comuna: valueOf('comuna'),
+          telefono: valueOf('telefono'),
+          email: valueOf('email'),
+          detalleCompra: valueOf('detalleCompra'),
+          monto: parseAmount(valueOf('monto')),
+          cantidad: parseAmount(valueOf('cantidad'))
+        };
+      }
+
+      function validateClient(record) {
+        const errors = [];
+        if (!record.nombreCliente) errors.push('Nombre Cliente es obligatorio.');
+        if (!record.region) errors.push('Region es obligatoria.');
+        if (!record.comuna) errors.push('Comuna es obligatoria.');
+        if (!record.email) errors.push('Email es obligatorio.');
+        if (!record.detalleCompra) errors.push('Detalle Compra es obligatorio.');
+        if (!Number.isFinite(record.monto) || record.monto <= 0) errors.push('Monto debe ser positivo.');
+        if (!Number.isFinite(record.cantidad) || record.cantidad <= 0) errors.push('Cantidad debe ser positiva.');
+        if (record.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(record.email)) errors.push('Email invalido.');
+        if (record.telefono) {
+          const digits = record.telefono.replace(/\D/g, '');
+          if (!/^\+?[\d\s()\-]{8,20}$/.test(record.telefono) || digits.length < 8 || digits.length > 12) {
+            errors.push('Telefono invalido.');
+          }
+        }
+        return errors;
+      }
+
+      function handleMutationResult(statusElement, successMessage) {
+        return (result) => {
+          setLoading(false);
+          if (!result.success) {
+            setStatus(statusElement, flattenErrors(result.errors || result.rejected), 'error');
+            return;
+          }
+          state.records = result.records || [];
+          resetForm();
+          renderAll();
+          setStatus(statusElement, successMessage, 'ok');
+        };
+      }
+
+      function handleFailure(statusElement) {
+        return (error) => {
+          setLoading(false);
+          setStatus(statusElement, error.message || String(error), 'error');
+        };
+      }
+
+      function editRecord(id) {
+        const record = state.records.find((item) => item.id === id);
+        if (!record) return;
+        state.editingId = id;
+        setValue('nombreCliente', record.nombreCliente);
+        setValue('direccion', record.direccion);
+        setValue('region', record.region);
+        populateCommunes(record.comuna);
+        setValue('telefono', record.telefono);
+        setValue('email', record.email);
+        setValue('detalleCompra', record.detalleCompra);
+        setValue('monto', record.monto);
+        setValue('cantidad', record.cantidad);
+        updateTotal();
+        elements.formTitle.textContent = 'Editar registro';
+        elements.submitButton.textContent = 'Actualizar';
+        elements.cancelEdit.hidden = false;
+        setStatus(elements.formStatus, 'Editando registro seleccionado.', 'warning');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      function deleteRecord(id) {
+        const record = state.records.find((item) => item.id === id);
+        if (!record || !confirm(`Eliminar el registro de ${record.nombreCliente}?`)) return;
+        setLoading(true);
+        google.script.run
+          .withSuccessHandler(handleMutationResult(elements.formStatus, 'Registro eliminado.'))
+          .withFailureHandler(handleFailure(elements.formStatus))
+          .deleteRecord(id);
+      }
+
+      function resetForm() {
+        state.editingId = null;
+        elements.form.reset();
+        populateCommunes();
+        updateTotal();
+        elements.formTitle.textContent = 'Nuevo registro';
+        elements.submitButton.textContent = 'Añadir';
+        elements.cancelEdit.hidden = true;
+        setStatus(elements.formStatus, 'Completa los campos obligatorios para añadir un registro.', '');
+      }
+
+      function refreshRecords() {
+        setLoading(true);
+        google.script.run
+          .withSuccessHandler((records) => {
+            state.records = records || [];
+            renderAll();
+            setLoading(false);
+          })
+          .withFailureHandler(handleFailure(elements.formStatus))
+          .getRecords();
+      }
+
+      function importSheet() {
+        const source = elements.sheetSource.value.trim();
+        if (!source) {
+          setStatus(elements.importStatus, 'Ingresa una URL o ID de Google Sheet.', 'error');
+          return;
+        }
+        setLoading(true);
+        google.script.run
+          .withSuccessHandler(handleImportResult)
+          .withFailureHandler(handleFailure(elements.importStatus))
+          .importFromGoogleSheet(source);
+      }
+
+      function importFile() {
+        const file = elements.fileSource.files[0];
+        if (!file) {
+          setStatus(elements.importStatus, 'Selecciona un archivo CSV o XLSX.', 'error');
+          return;
+        }
+
+        parseImportFile(file)
+          .then((rows) => {
+            setLoading(true);
+            google.script.run
+              .withSuccessHandler(handleImportResult)
+              .withFailureHandler(handleFailure(elements.importStatus))
+              .importRows(rows);
+          })
+          .catch((error) => setStatus(elements.importStatus, error.message || String(error), 'error'));
+      }
+
+      function handleImportResult(result) {
+        setLoading(false);
+        state.records = result.records || state.records;
+        renderAll();
+        const rejectedCount = (result.rejected || []).length;
+        const message = `Filas importadas: ${result.imported || 0}. Rechazadas: ${rejectedCount}.`;
+        if (rejectedCount) {
+          const detail = result.rejected.slice(0, 6).map((item) => `Fila ${item.row}: ${(item.errors || []).join(', ')}`).join(' ');
+          setStatus(elements.importStatus, `${message} ${detail}`, result.imported ? 'warning' : 'error');
+        } else {
+          setStatus(elements.importStatus, message, 'ok');
+        }
+      }
+
+      function parseImportFile(file) {
+        const extension = file.name.split('.').pop().toLowerCase();
+        if (extension === 'csv') {
+          return file.text().then(csvToObjects);
+        }
+        if (['xlsx', 'xls'].includes(extension)) {
+          return file.arrayBuffer().then((buffer) => {
+            const workbook = XLSX.read(buffer, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            return XLSX.utils.sheet_to_json(firstSheet, { defval: '' });
+          });
+        }
+        return Promise.reject(new Error('Formato no soportado. Usa CSV, XLSX o XLS.'));
+      }
+
+      function csvToObjects(csv) {
+        const rows = parseCsv(csv);
+        if (rows.length < 2) return [];
+        const headers = rows[0];
+        return rows.slice(1).map((row) => {
+          const object = {};
+          headers.forEach((header, index) => {
+            object[header] = row[index] || '';
+          });
+          return object;
+        });
+      }
+
+      function parseCsv(csv) {
+        const rows = [];
+        let row = [];
+        let value = '';
+        let quoted = false;
+        for (let i = 0; i < csv.length; i += 1) {
+          const char = csv[i];
+          const next = csv[i + 1];
+          if (char === '"' && quoted && next === '"') {
+            value += '"';
+            i += 1;
+          } else if (char === '"') {
+            quoted = !quoted;
+          } else if (char === ',' && !quoted) {
+            row.push(value);
+            value = '';
+          } else if ((char === '\n' || char === '\r') && !quoted) {
+            if (char === '\r' && next === '\n') i += 1;
+            row.push(value);
+            rows.push(row);
+            row = [];
+            value = '';
+          } else {
+            value += char;
+          }
+        }
+        if (value || row.length) {
+          row.push(value);
+          rows.push(row);
+        }
+        return rows.filter((items) => items.some((item) => String(item || '').trim()));
+      }
+
+      function downloadTemplate() {
+        const headers = state.templateHeaders.length
+          ? state.templateHeaders
+          : ['Nombre Cliente', 'Direccion', 'Region', 'Comuna', 'Telefono', 'Email', 'Detalle Compra', 'Monto', 'Cantidad'];
+        const csv = `${headers.join(',')}\n`;
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'plantilla-levantamiento.csv';
+        link.click();
+        URL.revokeObjectURL(link.href);
+      }
+
+      function renderAll() {
+        renderTable();
+        renderDashboard();
+      }
+
+      function renderTable() {
+        const records = getFilteredRecords();
+        elements.count.textContent = `${state.records.length} registros`;
+
+        if (!records.length) {
+          elements.body.innerHTML = '<tr><td colspan="10" class="empty">No hay registros para mostrar.</td></tr>';
+          return;
+        }
+
+        elements.body.innerHTML = records.map((record) => `
+          <tr>
+            <td>${escapeHtml(record.fechaRegistro)}</td>
+            <td>${escapeHtml(record.nombreCliente)}</td>
+            <td>${escapeHtml(record.region)}</td>
+            <td>${escapeHtml(record.comuna)}</td>
+            <td>${escapeHtml(record.email)}</td>
+            <td>${escapeHtml(record.detalleCompra)}</td>
+            <td>${currency.format(Number(record.monto) || 0)}</td>
+            <td>${numberFormat.format(Number(record.cantidad) || 0)}</td>
+            <td><strong>${currency.format(Number(record.precioTotal) || 0)}</strong></td>
+            <td>
+              <div class="row-actions">
+                <button class="icon-btn" type="button" title="Editar" onclick="editRecord('${escapeAttribute(record.id)}')">✎</button>
+                <button class="icon-btn delete" type="button" title="Eliminar" onclick="deleteRecord('${escapeAttribute(record.id)}')">×</button>
+              </div>
+            </td>
+          </tr>
+        `).join('');
+      }
+
+      function getFilteredRecords() {
+        const query = elements.search.value.trim().toLowerCase();
+        return state.records
+          .filter((record) => !query || Object.values(record).some((value) => String(value || '').toLowerCase().includes(query)))
+          .sort((a, b) => {
+            const first = a[state.sortKey];
+            const second = b[state.sortKey];
+            const direction = state.sortDirection === 'asc' ? 1 : -1;
+            if (typeof first === 'number' || typeof second === 'number') {
+              return ((Number(first) || 0) - (Number(second) || 0)) * direction;
+            }
+            return String(first || '').localeCompare(String(second || ''), 'es') * direction;
+          });
+      }
+
+      function sortBy(key) {
+        if (state.sortKey === key) {
+          state.sortDirection = state.sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+          state.sortKey = key;
+          state.sortDirection = 'asc';
+        }
+        renderTable();
+      }
+
+      function renderDashboard() {
+        const total = state.records.reduce((sum, item) => sum + (Number(item.precioTotal) || 0), 0);
+        const units = state.records.reduce((sum, item) => sum + (Number(item.cantidad) || 0), 0);
+        const average = state.records.length ? total / state.records.length : 0;
+        document.getElementById('metric-total').textContent = currency.format(total);
+        document.getElementById('metric-count').textContent = numberFormat.format(state.records.length);
+        document.getElementById('metric-average').textContent = currency.format(average);
+        document.getElementById('metric-units').textContent = numberFormat.format(units);
+
+        if (!state.chartsReady) return;
+        drawBarChart('chart-region', 'Ventas por region', groupBy('region'));
+        drawBarChart('chart-comuna', 'Ventas por comuna', groupBy('comuna', 10));
+        drawPieChart('chart-detail', 'Ventas por detalle', groupBy('detalleCompra', 8));
+        drawLineChart('chart-date', 'Evolucion temporal', groupByDate());
+      }
+
+      function groupBy(key, limit) {
+        const map = {};
+        state.records.forEach((record) => {
+          const label = record[key] || 'Sin dato';
+          map[label] = (map[label] || 0) + (Number(record.precioTotal) || 0);
+        });
+        return Object.entries(map)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, limit || 999);
+      }
+
+      function groupByDate() {
+        const map = {};
+        state.records.forEach((record) => {
+          const label = String(record.fechaRegistro || '').slice(0, 10) || 'Sin fecha';
+          map[label] = (map[label] || 0) + (Number(record.precioTotal) || 0);
+        });
+        return Object.entries(map).sort((a, b) => a[0].localeCompare(b[0]));
+      }
+
+      function drawBarChart(id, title, rows) {
+        const data = google.visualization.arrayToDataTable([['Categoria', 'Ventas'], ...rows]);
+        const chart = new google.visualization.ColumnChart(document.getElementById(id));
+        chart.draw(data, chartOptions(title));
+      }
+
+      function drawPieChart(id, title, rows) {
+        const data = google.visualization.arrayToDataTable([['Categoria', 'Ventas'], ...rows]);
+        const chart = new google.visualization.PieChart(document.getElementById(id));
+        chart.draw(data, { ...chartOptions(title), pieHole: 0.45 });
+      }
+
+      function drawLineChart(id, title, rows) {
+        const data = google.visualization.arrayToDataTable([['Fecha', 'Ventas'], ...rows]);
+        const chart = new google.visualization.LineChart(document.getElementById(id));
+        chart.draw(data, chartOptions(title));
+      }
+
+      function chartOptions(title) {
+        return {
+          title,
+          legend: { position: 'bottom' },
+          chartArea: { left: 70, top: 50, width: '78%', height: '65%' },
+          colors: ['#0f766e', '#334155', '#b45309', '#2563eb'],
+          backgroundColor: '#ffffff',
+          fontName: 'Inter'
+        };
+      }
+
+      function updateTotal() {
+        const total = parseAmount(elements.monto.value) * parseAmount(elements.cantidad.value);
+        elements.precioTotal.value = Number.isFinite(total) ? currency.format(total) : '';
+      }
+
+      function parseAmount(value) {
+        if (typeof value === 'number') return value;
+        let text = String(value || '').replace(/\$/g, '').replace(/\s/g, '');
+        if (!text) return NaN;
+        if (text.includes(',') && text.includes('.')) {
+          text = text.replace(/\./g, '').replace(',', '.');
+        } else if (text.includes(',')) {
+          text = text.replace(',', '.');
+        }
+        return Number(text.replace(/[^0-9.\-]/g, ''));
+      }
+
+      function valueOf(id) {
+        return document.getElementById(id).value.trim();
+      }
+
+      function setValue(id, value) {
+        document.getElementById(id).value = value || '';
+      }
+
+      function setStatus(element, message, type) {
+        element.textContent = message;
+        element.className = `status ${type || ''}`.trim();
+      }
+
+      function setLoading(isLoading) {
+        elements.app.classList.toggle('loading', isLoading);
+        document.querySelectorAll('button').forEach((button) => {
+          button.disabled = isLoading;
+        });
+      }
+
+      function flattenErrors(errors) {
+        if (!errors) return 'Ocurrio un error.';
+        if (Array.isArray(errors)) {
+          return errors.map((item) => {
+            if (typeof item === 'string') return item;
+            return `Fila ${item.row}: ${(item.errors || []).join(', ')}`;
+          }).join(' ');
+        }
+        return String(errors);
+      }
+
+      function escapeHtml(value) {
+        return String(value || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      function escapeAttribute(value) {
+        return escapeHtml(value).replace(/\\/g, '\\\\');
+      }
+    </script>
+  </body>
+</html>
